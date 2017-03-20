@@ -6,8 +6,8 @@ RingBuffer::RingBuffer(int size,int readMode,int writeMode)
 ,mReadMode(readMode)
 ,mWriteMode(writeMode)
 {
-    //保留一个位用于区分空（writeIndex = readIndex）和满(writeIndex + 1 = readIndex）的情况
-    mData = malloc(mSize + 1);
+    /*保留一个位用于区分空（writeIndex = readIndex）和满(writeIndex + 1 = readIndex）的情况*/
+    mData = (unsigned char *)malloc(mSize + 1);
 }
 
 RingBuffer::~RingBuffer()
@@ -30,34 +30,39 @@ int RingBuffer::getUsed()
     }
 }
 
-int RingBuffer::write(void * src,int pos,int size)
+int RingBuffer::write(unsigned char * src,int pos,int size)
 {
-    int writeIndex;
-    int writeSize;
+    if(mSize < size) {
+        pos += size - mSize;
+        size = mSize;
+    }
+    
+    int writeIndex = mWriteIndex;
+    
     if(mWriteMode == WRITE_MODE_BLOCK) {
-        if(mSize <= size) {
+        {
+            std::unique_lock<mutex> ul(mMutex);
+            while(getAvailable() < size) {
+                mConditionVariable.wait(ul);
+            }
             
         }
-        std::unique_lock<mutex> ul(mMutex);
+        
     }
     else {
         {
             std::lock_guard<mutex> lg(mMutex);
-            if(mSize < size) {
-                
+            mWriteIndex = (mWriteIndex + size) % (mSize + 1);
+            if(getAvailable() < size) {
+                mReadIndex = (mWriteIndex + 1) % (mSize + 1);
             }
-            else if(getAvailable() < size){
-                
-            }
-            else {
-                
-            }
+            
         }
-        
-        
     }
+    
+    memcpy(src + pos, mData + writeIndex, size);
 }
-int RingBuffer::read(void * dst,int pos,int size)
+int RingBuffer::read(unsigned char * dst,int pos,int size)
 {
     
 }
