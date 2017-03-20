@@ -14,14 +14,15 @@ class RingBuffer
 public:
     enum WriteMode {
         WRITE_MODE_BLOCK,
+        WRITE_MODE_NON_BLOCK,
         WRITE_MODE_OVER_WRITE
     };
     enum ReadMode {
         READ_MODE_BLOCK,
-        READ_MODE_PARTIAL
+        READ_MODE_NON_BLOCK
     };
     
-    RingBuffer(int size = DEFAULT_RING_BUFFER_SIZE,int readMode = READ_MODE_BLOCK,int writeMode = WRITE_MODE_BLOCK);
+    RingBuffer(int size = DEFAULT_RING_BUFFER_SIZE,int readMode = READ_MODE_BLOCK,int writeMode = WRITE_MODE_OVER_WRITE);
     ~RingBuffer();
     
     int getSize();
