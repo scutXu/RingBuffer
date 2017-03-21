@@ -14,6 +14,21 @@ RingBuffer::~RingBuffer()
     free(mData);
 }
 
+int getSize()
+{
+	return mSize;
+}
+
+void setReadMode(int readMode)
+{
+	mReadMode = readMode;
+}
+
+void setWriteMode(int writeMode)
+{
+	mWriteMode = writeMode;
+}
+
 int RingBuffer::getAvailable()
 {
     return mSize - getUsed();
@@ -22,10 +37,10 @@ int RingBuffer::getAvailable()
 int RingBuffer::getUsed()
 {
     if(mWriteIndex > mReadIndex) {
-        
+       return mWriteIndex - mReadIndex; 
     }
     else {
-        
+        return mSize + 1 - mReadIndex + mWriteIndex;
     }
 }
 
@@ -63,7 +78,7 @@ int RingBuffer::write(unsigned char * src,int pos,int size)
         
     }
     else if(mWriteMode == WRITE_MODE_NON_BLOCK) {
-    	std::unique_lock<mutex> ul(mMutex);
+    	std::lock_guard<mutex> ul(mMutex);
     	int available = getAvailable();
     	available = available < size ? available : size;
     	writeSize = available;
@@ -117,10 +132,14 @@ int RingBuffer::read(unsigned char * dst,int pos,int size)
 				mConditionVariable.wait();
 			}
 			used = used < size ? used : size;
-			
+			_read(dst,pos,used);
     	}
     }
     else {
-
+    	std::lock_guard<mutex> lg(mMutex);
+    	int used = getUsed();
+    	used = used < size ? used : size;
+    	readSize = used;
+    	_read(dst,pos,used);
     }
 }

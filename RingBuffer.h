@@ -36,6 +36,8 @@ public:
 private:
     int getUsed();
     int getAvailable();
+    void _write(unsigned char * src,int & pos,int & size);
+    void _read(unsigned char * dst,int & pos,int & size);
     
     void * mData;
     int mSize;
