@@ -27,8 +27,8 @@ public:
     
     int getSize();
     
-    int write(void * src,int pos,int size);
-    int read(void * dst,int pos,int size);
+    int write(unsigned char * src,int pos,int size);
+    int read(unsigned char * dst,int pos,int size);
     
     void setReadMode(int readMode);
     void setWriteMode(int writeMode);
@@ -36,10 +36,10 @@ public:
 private:
     int getUsed();
     int getAvailable();
-    void _write(unsigned char * src,int & pos,int & size);
-    void _read(unsigned char * dst,int & pos,int & size);
+    void _write(unsigned char * src,int & pos,int size);
+    void _read(unsigned char * dst,int & pos,int size);
     
-    void * mData;
+    unsigned char * mData;
     int mSize;
     int mReadMode;
     int mWriteMode;

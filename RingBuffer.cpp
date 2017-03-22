@@ -7,6 +7,9 @@ RingBuffer::RingBuffer(int size,int readMode,int writeMode)
 ,mWriteMode(writeMode)
 {
     mData = (unsigned char *)malloc(mSize + 1);
+    memset(mData, 1, mSize + 1);
+    mReadIndex = 0;
+    mWriteIndex = 0;
 }
 
 RingBuffer::~RingBuffer()
@@ -14,17 +17,17 @@ RingBuffer::~RingBuffer()
     free(mData);
 }
 
-int getSize()
+int RingBuffer::getSize()
 {
 	return mSize;
 }
 
-void setReadMode(int readMode)
+void RingBuffer::setReadMode(int readMode)
 {
 	mReadMode = readMode;
 }
 
-void setWriteMode(int writeMode)
+void RingBuffer::setWriteMode(int writeMode)
 {
 	mWriteMode = writeMode;
 }
@@ -36,7 +39,7 @@ int RingBuffer::getAvailable()
 
 int RingBuffer::getUsed()
 {
-    if(mWriteIndex > mReadIndex) {
+    if(mWriteIndex >= mReadIndex) {
        return mWriteIndex - mReadIndex; 
     }
     else {
@@ -44,21 +47,21 @@ int RingBuffer::getUsed()
     }
 }
 
-void RingBuffer::_write(unsigned char * src,int & pos,int & size)
+void RingBuffer::_write(unsigned char * src,int & pos,int size)
 {
 	int chunkSize = mSize - mWriteIndex;
     if(size >= chunkSize) {
-    	memcpy(src + pos,mData + mWriteIndex,chunkSize);
+    	memcpy(mData + mWriteIndex,src + pos,chunkSize);
     	size -= chunkSize;
     	mWriteIndex = 0;
     	pos += chunkSize;
     }
     if(size > 0) {
-    	memcpy(src + pos,mData + mWriteIndex,size);
+    	memcpy(mData + mWriteIndex,src + pos,size);
     	mWriteIndex += size;
     	pos += size;
     }
-    mConditionVariable.notify();
+    mConditionVariable.notify_all();
 }
 
 int RingBuffer::write(unsigned char * src,int pos,int size)
@@ -74,6 +77,7 @@ int RingBuffer::write(unsigned char * src,int pos,int size)
             }
             available = available < size ? available : size;
             _write(src,pos,available);
+            size -= available;
     	}
         
     }
@@ -104,21 +108,21 @@ int RingBuffer::write(unsigned char * src,int pos,int size)
     return writeSize;
 }
 
-void RingBuffer::_read(unsigned char * dst,int & pos,int & size)
+void RingBuffer::_read(unsigned char * dst,int & pos,int size)
 {
 	int chunkSize = mSize - mReadIndex;
     if(size >= chunkSize) {
-    	memcpy(mData + mReadIndex,dst + pos,chunkSize);
+    	memcpy(dst + pos,mData + mReadIndex,chunkSize);
     	size -= chunkSize;
     	mReadIndex = 0;
     	pos += chunkSize;
     }
     if(size > 0) {
-    	memcpy(mData + mReadIndex,dst + pos,size);
+    	memcpy(dst + pos,mData + mReadIndex,size);
     	mReadIndex += size;
     	pos += size;
     }
-    mConditionVariable.notify();	
+    mConditionVariable.notify_all();
 }
 int RingBuffer::read(unsigned char * dst,int pos,int size)
 {
@@ -129,10 +133,11 @@ int RingBuffer::read(unsigned char * dst,int pos,int size)
     	while(size > 0) {
 			std::unique_lock<mutex> ul(mMutex);
 			while((used = getUsed()) == 0) {
-				mConditionVariable.wait();
+				mConditionVariable.wait(ul);
 			}
 			used = used < size ? used : size;
 			_read(dst,pos,used);
+            size -= used;
     	}
     }
     else {
@@ -142,4 +147,5 @@ int RingBuffer::read(unsigned char * dst,int pos,int size)
     	readSize = used;
     	_read(dst,pos,used);
     }
+    return readSize;
 }
