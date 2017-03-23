@@ -47,7 +47,7 @@ void consumerFunc()
         for(int i=0;i<OUTPUT_BUFFER_SIZE;++i) {
             assert(data[i] == num);
             ++ num;
-            cout<<data[i]<<endl;
+            //cout<<data[i]<<endl;
         }
     }
     cout<<"done consumer"<<endl;

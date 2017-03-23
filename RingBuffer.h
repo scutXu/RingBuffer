@@ -4,6 +4,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <iostream>
+#include <string>
 
 using std::mutex;
 using std::condition_variable;
@@ -43,9 +44,10 @@ private:
     template<typename T>
     void dump(std::ostream & out)
     {
-    	int numElement = getUsed() / sizeof(T);
+        out<<'('<<mReadIndex<<':'<<mWriteIndex<<')'<<std::endl;
+    	int numElement = mSize / sizeof(T);
     	for(int i=0;i<numElement;++i) {
-    		out<<((T *)mData)[i];
+    		out<<((T *)mData)[i]<<' ';
     	}
     	out<<std::endl;
     }

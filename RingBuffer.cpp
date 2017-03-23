@@ -1,13 +1,15 @@
 #include "RingBuffer.h"
 #include <stdlib.h>
 
+#define _DEBUG
+
 RingBuffer::RingBuffer(int size,int readMode,int writeMode)
 :mSize(size)
 ,mReadMode(readMode)
 ,mWriteMode(writeMode)
 {
     mData = (unsigned char *)malloc(mSize + 1);
-    memset(mData, 1, mSize + 1);
+    memset(mData, 0, mSize + 1);
     mReadIndex = 0;
     mWriteIndex = 0;
 }
@@ -49,7 +51,10 @@ int RingBuffer::getUsed()
 
 void RingBuffer::_write(unsigned char * src,int & pos,int size)
 {
-	int chunkSize = mSize - mWriteIndex;
+#ifdef _DEBUG
+    std::cout<<"write "<<size;
+#endif
+	int chunkSize = mSize + 1 - mWriteIndex;
     if(size >= chunkSize) {
     	memcpy(mData + mWriteIndex,src + pos,chunkSize);
     	size -= chunkSize;
@@ -62,6 +67,10 @@ void RingBuffer::_write(unsigned char * src,int & pos,int size)
     	pos += size;
     }
     mConditionVariable.notify_all();
+
+#ifdef _DEBUG
+    dump<int>(std::cout);
+#endif
 }
 
 int RingBuffer::write(unsigned char * src,int pos,int size)
@@ -110,19 +119,31 @@ int RingBuffer::write(unsigned char * src,int pos,int size)
 
 void RingBuffer::_read(unsigned char * dst,int & pos,int size)
 {
-	int chunkSize = mSize - mReadIndex;
+#ifdef _DEBUG
+    std::cout<<"read "<<size;
+#endif
+	int chunkSize = mSize + 1 - mReadIndex;
     if(size >= chunkSize) {
     	memcpy(dst + pos,mData + mReadIndex,chunkSize);
+#ifdef _DEBUG
+        memset(mData + mReadIndex, 0, chunkSize);
+#endif
     	size -= chunkSize;
     	mReadIndex = 0;
     	pos += chunkSize;
     }
     if(size > 0) {
     	memcpy(dst + pos,mData + mReadIndex,size);
+#ifdef _DEBUG
+        memset(mData + mReadIndex, 0, size);
+#endif
     	mReadIndex += size;
     	pos += size;
     }
     mConditionVariable.notify_all();
+#ifdef _DEBUG
+    dump<int>(std::cout);
+#endif
 }
 int RingBuffer::read(unsigned char * dst,int pos,int size)
 {
