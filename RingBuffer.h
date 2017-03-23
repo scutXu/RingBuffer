@@ -3,6 +3,7 @@
 
 #include <condition_variable>
 #include <mutex>
+#include <iostream>
 
 using std::mutex;
 using std::condition_variable;
@@ -39,6 +40,16 @@ private:
     void _write(unsigned char * src,int & pos,int size);
     void _read(unsigned char * dst,int & pos,int size);
     
+    template<typename T>
+    void dump(std::ostream & out)
+    {
+    	int numElement = getUsed() / sizeof(T);
+    	for(int i=0;i<numElement;++i) {
+    		out<<((T *)mData)[i];
+    	}
+    	out<<std::endl;
+    }
+
     unsigned char * mData;
     int mSize;
     int mReadMode;
