@@ -8,8 +8,8 @@ RingBuffer::RingBuffer(int size,int readMode,int writeMode)
 ,mReadMode(readMode)
 ,mWriteMode(writeMode)
 {
-    mData = (unsigned char *)malloc(mSize + 1);
-    memset(mData, 0, mSize + 1);
+    mData = (unsigned char *)malloc(mSize);
+    memset(mData, 0, mSize);
     mReadIndex = 0;
     mWriteIndex = 0;
 }
@@ -36,7 +36,7 @@ void RingBuffer::setWriteMode(int writeMode)
 
 int RingBuffer::getAvailable()
 {
-    return mSize - getUsed();
+    return mSize - getUsed() - 1;
 }
 
 int RingBuffer::getUsed()
@@ -45,7 +45,7 @@ int RingBuffer::getUsed()
        return mWriteIndex - mReadIndex; 
     }
     else {
-        return mSize + 1 - mReadIndex + mWriteIndex;
+        return mSize - mReadIndex + mWriteIndex;
     }
 }
 
@@ -54,7 +54,7 @@ void RingBuffer::_write(unsigned char * src,int & pos,int size)
 #ifdef _DEBUG
     std::cout<<"write "<<size;
 #endif
-	int chunkSize = mSize + 1 - mWriteIndex;
+	int chunkSize = mSize - mWriteIndex;
     if(size >= chunkSize) {
     	memcpy(mData + mWriteIndex,src + pos,chunkSize);
     	size -= chunkSize;
@@ -98,9 +98,9 @@ int RingBuffer::write(unsigned char * src,int pos,int size)
     	_write(src,pos,available);
     }
     else {
-     	if(mSize < size) {
-    		pos += size - mSize;
-    		size = mSize;
+     	if((mSize - 1) < size) {
+    		pos += size - (mSize - 1);
+    		size = mSize - 1;
     	}
     	writeSize = size;
         {
@@ -108,7 +108,7 @@ int RingBuffer::write(unsigned char * src,int pos,int size)
             bool overWritted = getAvailable() < size;
             _write(src,pos,size);
             if(overWritted) {
-                mReadIndex = (mWriteIndex + 1) % (mSize + 1);
+                mReadIndex = (mWriteIndex + 1) % mSize;
             }
             
         } 	
@@ -122,7 +122,7 @@ void RingBuffer::_read(unsigned char * dst,int & pos,int size)
 #ifdef _DEBUG
     std::cout<<"read "<<size;
 #endif
-	int chunkSize = mSize + 1 - mReadIndex;
+	int chunkSize = mSize - mReadIndex;
     if(size >= chunkSize) {
     	memcpy(dst + pos,mData + mReadIndex,chunkSize);
 #ifdef _DEBUG
